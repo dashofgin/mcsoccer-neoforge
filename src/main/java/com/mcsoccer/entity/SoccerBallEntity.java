@@ -26,12 +26,13 @@ import java.util.Random;
 
 public class SoccerBallEntity extends Entity implements ItemSupplier {
 
-    // Base physics
+    // Physics constants
     private static final double GRAVITY = 0.04;
-    private static final double AIR_FRICTION = 0.98;
-    private static final double GROUND_FRICTION = 0.85;
-    private static final double BOUNCE_FACTOR = 0.6;
-    private static final double MIN_MOTION = 0.001;
+    private static final double AIR_DRAG_XZ = 0.98;
+    private static final double AIR_DRAG_Y = 0.98;
+    private static final double GROUND_FRICTION = 0.82;
+    private static final double BOUNCE_FACTOR = 0.55;
+    private static final double MIN_MOTION = 0.003;
 
     // Legacy kick (left/right click)
     private static final double KICK_POWER = 1.2;
@@ -40,9 +41,11 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     private static final double PASS_UP = 0.15;
 
     // Dribble
-    private static final double DRIBBLE_SPEED = 0.25;
+    private static final double DRIBBLE_SPEED = 0.2;
+    private static final int DRIBBLE_COOLDOWN_TICKS = 3;
 
     private Player lastKicker = null;
+    private int dribbleCooldown = 0;
 
     // Spin for curve shots
     private Vec3 spinForce = Vec3.ZERO;
@@ -58,6 +61,10 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     private int dragPhaseMax = 0;
     private double dragStart = 1.0;
     private double dragEnd = 1.0;
+
+    // Goal state - prevents physics while goal is being processed
+    private boolean goalScored = false;
+    private int goalFreezeTimer = 0;
 
     public SoccerBallEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -77,6 +84,19 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     public void tick() {
         super.tick();
 
+        // If goal was scored, freeze ball for a period
+        if (goalScored) {
+            setDeltaMovement(Vec3.ZERO);
+            if (goalFreezeTimer > 0) {
+                goalFreezeTimer--;
+            } else {
+                goalScored = false;
+            }
+            return;
+        }
+
+        if (dribbleCooldown > 0) dribbleCooldown--;
+
         Vec3 motion = getDeltaMovement();
 
         // Apply gravity
@@ -87,7 +107,6 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
             Vec3 horiz = new Vec3(motion.x, 0, motion.z);
             if (horiz.lengthSqr() > 0.001) {
                 Vec3 norm = horiz.normalize();
-                // Perpendicular force (cross with UP)
                 Vec3 perp = new Vec3(norm.z, 0, -norm.x);
                 double magnitude = spinForce.length();
                 motion = motion.add(perp.scale(magnitude));
@@ -99,9 +118,9 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
         // Apply knuckleball wobble
         if (knuckleballActive && knuckleballTicksRemaining > 0) {
             if (tickCount % 3 == 0) {
-                double swerveX = (random.nextDouble() - 0.5) * 0.15;
-                double swerveY = (random.nextDouble() - 0.5) * 0.03;
-                double swerveZ = (random.nextDouble() - 0.5) * 0.15;
+                double swerveX = (random.nextDouble() - 0.5) * 0.12;
+                double swerveY = (random.nextDouble() - 0.5) * 0.02;
+                double swerveZ = (random.nextDouble() - 0.5) * 0.12;
                 motion = motion.add(swerveX, swerveY, swerveZ);
             }
             knuckleballTicksRemaining--;
@@ -110,24 +129,24 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
             }
         }
 
-        // Apply multi-stage drag
+        // Apply multi-stage drag (overrides normal air drag during kick phases)
         if (dragPhase < dragPhaseMax) {
             double t = (double) dragPhase / dragPhaseMax;
             double drag = dragStart + (dragEnd - dragStart) * t;
-            motion = new Vec3(motion.x * drag, motion.y * 0.995, motion.z * drag);
+            motion = new Vec3(motion.x * drag, motion.y, motion.z * drag);
             dragPhase++;
         }
 
-        // Move with collision detection
+        // Set motion before move so collision detection works
+        setDeltaMovement(motion);
         move(MoverType.SELF, motion);
 
-        // After move(), getDeltaMovement() is adjusted by collisions
+        // After move(), getDeltaMovement() reflects collision adjustments
         motion = getDeltaMovement();
 
         // Handle bouncing off walls
         if (horizontalCollision) {
             motion = new Vec3(-motion.x * BOUNCE_FACTOR, motion.y, -motion.z * BOUNCE_FACTOR);
-            // Kill spin on wall hit
             spinForce = Vec3.ZERO;
             spinTicksRemaining = 0;
             if (!level().isClientSide()) {
@@ -140,7 +159,8 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
         if (verticalCollision) {
             if (onGround()) {
                 double ySpeed = Math.abs(motion.y);
-                if (ySpeed > 0.05) {
+                if (ySpeed > 0.08) {
+                    // Bounce
                     motion = new Vec3(
                             motion.x * GROUND_FRICTION,
                             -motion.y * BOUNCE_FACTOR,
@@ -151,20 +171,27 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
                                 SoundEvents.SLIME_BLOCK_STEP, SoundSource.NEUTRAL, 0.3F, 1.5F);
                     }
                 } else {
+                    // Settled on ground - apply strong ground friction
                     motion = new Vec3(motion.x * GROUND_FRICTION, 0, motion.z * GROUND_FRICTION);
                 }
             } else {
+                // Hit ceiling
                 motion = new Vec3(motion.x, -motion.y * BOUNCE_FACTOR, motion.z);
             }
         }
 
-        // Air drag (only when no multi-stage drag active)
-        if (!onGround() && !verticalCollision && !horizontalCollision && dragPhase >= dragPhaseMax) {
-            motion = motion.multiply(AIR_FRICTION, 1.0, AIR_FRICTION);
+        // Air drag when airborne and not in multi-stage drag
+        if (!onGround() && dragPhase >= dragPhaseMax) {
+            motion = new Vec3(motion.x * AIR_DRAG_XZ, motion.y * AIR_DRAG_Y, motion.z * AIR_DRAG_XZ);
+        }
+
+        // Ground rolling friction (always apply when on ground, even outside bounce)
+        if (onGround() && !verticalCollision) {
+            motion = new Vec3(motion.x * GROUND_FRICTION, motion.y, motion.z * GROUND_FRICTION);
         }
 
         // Stop if very slow
-        if (motion.lengthSqr() < MIN_MOTION) {
+        if (motion.lengthSqr() < MIN_MOTION * MIN_MOTION) {
             motion = Vec3.ZERO;
             knuckleballActive = false;
             spinTicksRemaining = 0;
@@ -178,6 +205,8 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         if (!level().isClientSide()) {
+            if (goalScored) return InteractionResult.PASS;
+
             if (player.isShiftKeyDown()) {
                 ItemStack ball = new ItemStack(ModItems.SOCCER_BALL.get());
                 if (!player.getInventory().add(ball)) {
@@ -198,6 +227,7 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     // Left-click = power kick
     @Override
     public boolean hurtServer(ServerLevel serverLevel, DamageSource source, float amount) {
+        if (goalScored) return false;
         if (source.getEntity() instanceof Player player) {
             Vec3 look = player.getLookAngle();
             setDeltaMovement(look.x * KICK_POWER, KICK_UP + look.y * 0.5, look.z * KICK_POWER);
@@ -213,12 +243,13 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
      * Advanced kick dispatch — called from network handler for keybind actions.
      */
     public void applyKick(Player player, KickAction action) {
+        if (goalScored) return;
+
         Vec3 look = player.getLookAngle();
         Vec3 playerVelocity = player.getDeltaMovement();
         double playerSpeed = playerVelocity.horizontalDistance();
         double kickType = look.y;
 
-        // Normalize horizontal look direction
         double xDir = look.x;
         double zDir = look.z;
         double hLen = Math.sqrt(xDir * xDir + zDir * zDir);
@@ -235,88 +266,86 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
 
         switch (action) {
             case LONG_PASS -> {
-                double basePower = 2.5;
-                double power = (basePower + playerSpeed * 0.5) * (0.9 + random.nextDouble() * 0.2);
-                double hPower = power * 1.5;
+                double basePower = 2.0;
+                double power = (basePower + playerSpeed * 0.4) * (0.9 + random.nextDouble() * 0.2);
+                double hPower = power * 1.3;
                 double vPower;
                 if (kickType > 0.3) {
-                    vPower = 1.0 + kickType * 0.8;
+                    vPower = 0.8 + kickType * 0.6;
                     hPower *= 0.85;
                 } else if (kickType > 0.0) {
-                    vPower = 0.8 + kickType * 0.6;
+                    vPower = 0.6 + kickType * 0.5;
                 } else if (kickType > -0.3) {
-                    vPower = 0.4;
-                    hPower *= 1.2;
+                    vPower = 0.35;
+                    hPower *= 1.15;
                 } else {
                     vPower = 0.2;
-                    hPower *= 1.4;
+                    hPower *= 1.3;
                 }
                 setDeltaMovement(xDir * hPower, vPower, zDir * hPower);
-                setupDrag(20, 0.992, 0.97);
+                setupDrag(20, 0.99, 0.96);
             }
             case SHORT_PASS -> {
-                double basePower = 2.2;
+                double basePower = 1.5;
                 double power = (basePower + playerSpeed * 0.3) * (0.95 + random.nextDouble() * 0.1);
                 double hPower = power;
                 double vPower;
                 if (kickType > 0.4) {
-                    vPower = 0.5 + kickType * 0.3;
+                    vPower = 0.4 + kickType * 0.2;
                     hPower *= 0.8;
                 } else if (kickType > 0.1) {
-                    vPower = 0.3 + kickType * 0.2;
+                    vPower = 0.2 + kickType * 0.15;
                 } else {
-                    vPower = 0.1;
+                    vPower = 0.08;
                     hPower *= 1.1;
                 }
                 setDeltaMovement(xDir * hPower, vPower, zDir * hPower);
-                setupDrag(12, 0.96, 0.94);
+                setupDrag(12, 0.96, 0.92);
             }
             case CURVE -> {
-                double basePower = 1.7;
-                double power = (basePower + playerSpeed * 0.6) * (0.9 + random.nextDouble() * 0.2);
-                double hPower = power * 1.7;
-                double curveMagnitude = power * 0.25;
+                double basePower = 1.5;
+                double power = (basePower + playerSpeed * 0.5) * (0.9 + random.nextDouble() * 0.2);
+                double hPower = power * 1.4;
+                double curveMagnitude = power * 0.2;
                 double vPower;
                 if (kickType > 0.25) {
-                    vPower = 1.0 + kickType * 0.75;
+                    vPower = 0.8 + kickType * 0.6;
                     hPower *= 0.85;
                 } else if (kickType > -0.05) {
-                    vPower = 0.7 + kickType * 0.6;
+                    vPower = 0.5 + kickType * 0.5;
                 } else {
-                    vPower = 0.3;
-                    hPower *= 1.25;
+                    vPower = 0.25;
+                    hPower *= 1.2;
                 }
-                // Initial curve push (always curves left like FootBlock)
-                double curvePush = 0.35 * curveMagnitude;
+                double curvePush = 0.3 * curveMagnitude;
                 double xForce = xDir * hPower + zDir * curvePush;
                 double zForce = zDir * hPower - xDir * curvePush;
                 setDeltaMovement(xForce, vPower, zForce);
-                // Set ongoing spin
-                spinForce = new Vec3(curveMagnitude * 0.085, 0, curveMagnitude * 0.085);
+                spinForce = new Vec3(curveMagnitude * 0.07, 0, curveMagnitude * 0.07);
                 spinTicksRemaining = 25;
-                setupDrag(18, 0.985, 0.968);
+                setupDrag(18, 0.985, 0.96);
             }
             case KNUCKLEBALL -> {
-                double basePower = 1.8;
-                double power = (basePower + playerSpeed * 0.6) * (0.9 + random.nextDouble() * 0.2);
-                double hPower = power * 1.7;
+                double basePower = 1.5;
+                double power = (basePower + playerSpeed * 0.5) * (0.9 + random.nextDouble() * 0.2);
+                double hPower = power * 1.4;
                 double vPower;
                 if (kickType > 0.3) {
-                    vPower = 0.9 + kickType * 0.8;
+                    vPower = 0.7 + kickType * 0.6;
                     hPower *= 0.9;
                 } else if (kickType > 0.0) {
-                    vPower = 0.7 + kickType * 0.6;
+                    vPower = 0.5 + kickType * 0.5;
                 } else if (kickType > -0.3) {
-                    vPower = 0.3;
-                    hPower *= 1.2;
+                    vPower = 0.25;
+                    hPower *= 1.15;
                 } else {
-                    vPower = 0.15;
-                    hPower *= 1.5;
+                    vPower = 0.12;
+                    hPower *= 1.4;
                 }
                 setDeltaMovement(xDir * hPower, vPower, zDir * hPower);
                 knuckleballActive = true;
                 knuckleballTicksRemaining = 40;
-                setupDrag(20, 0.988, 0.975);
+                setupDrag(20, 0.985, 0.97);
             }
             default -> {
                 // Standing/slide tackle handled in ModMessages directly
@@ -342,6 +371,23 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
         this.lastKicker = player;
     }
 
+    /** Called by GoalBlockEntity to freeze ball after goal */
+    public void onGoalScored() {
+        this.goalScored = true;
+        this.goalFreezeTimer = 60; // 3 seconds freeze
+        setDeltaMovement(Vec3.ZERO);
+        // Reset all effects
+        spinForce = Vec3.ZERO;
+        spinTicksRemaining = 0;
+        knuckleballActive = false;
+        knuckleballTicksRemaining = 0;
+        dragPhase = dragPhaseMax;
+    }
+
+    public boolean isGoalFrozen() {
+        return goalScored;
+    }
+
     @Override
     public boolean isPickable() {
         return true;
@@ -354,17 +400,25 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
 
     @Override
     public void push(Entity entity) {
+        if (goalScored) return;
         if (entity instanceof Player player) {
+            if (dribbleCooldown > 0) return;
             // Check canTouchBall
             if (!level().isClientSide()) {
                 PlayerSoccerData data = player.getData(ModAttachments.PLAYER_SOCCER_DATA);
                 if (!data.canTouchBall()) return;
             }
-            // Dribble: move ball in player's look direction
+            // Dribble: move ball in player's look direction (horizontal only)
             double yaw = Math.toRadians(player.getYRot());
             double forwardX = -Math.sin(yaw);
             double forwardZ = Math.cos(yaw);
-            setDeltaMovement(getDeltaMovement().add(forwardX * DRIBBLE_SPEED, 0.05, forwardZ * DRIBBLE_SPEED));
+            setDeltaMovement(new Vec3(
+                    forwardX * DRIBBLE_SPEED,
+                    getDeltaMovement().y, // preserve Y momentum
+                    forwardZ * DRIBBLE_SPEED
+            ));
+            lastKicker = player;
+            dribbleCooldown = DRIBBLE_COOLDOWN_TICKS;
         }
     }
 

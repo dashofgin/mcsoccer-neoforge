@@ -10,22 +10,61 @@ import com.mcsoccer.entity.ModEntities;
 import com.mcsoccer.item.ModItems;
 import com.mcsoccer.network.ModMessages;
 import com.mcsoccer.sound.ModSounds;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 @Mod(MCSoccerMod.MOD_ID)
 public class MCSoccerMod {
     public static final String MOD_ID = "mcsoccer";
     public static final Logger LOGGER = LogUtils.getLogger();
+
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
+
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> SOCCER_TAB =
+            CREATIVE_TABS.register("soccer_tab", () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup.mcsoccer.soccer_tab"))
+                    .icon(() -> new ItemStack(ModItems.SOCCER_BALL.get()))
+                    .displayItems((params, output) -> {
+                        // Equipment
+                        output.accept(ModItems.SOCCER_BALL.get());
+                        output.accept(ModItems.GOALKEEPER_GLOVES.get());
+                        output.accept(ModBlocks.GOAL_BLOCK_ITEM.get());
+
+                        // Club jerseys
+                        output.accept(ModItems.JERSEY_REAL_MADRID.get());
+                        output.accept(ModItems.JERSEY_BARCELONA.get());
+                        output.accept(ModItems.JERSEY_BAYERN.get());
+                        output.accept(ModItems.JERSEY_PSG.get());
+                        output.accept(ModItems.JERSEY_MAN_CITY.get());
+                        output.accept(ModItems.JERSEY_LIVERPOOL.get());
+                        output.accept(ModItems.JERSEY_JUVENTUS.get());
+                        output.accept(ModItems.JERSEY_AC_MILAN.get());
+
+                        // National jerseys
+                        output.accept(ModItems.JERSEY_POLAND.get());
+                        output.accept(ModItems.JERSEY_BRAZIL.get());
+                        output.accept(ModItems.JERSEY_GERMANY.get());
+                        output.accept(ModItems.JERSEY_ARGENTINA.get());
+                        output.accept(ModItems.JERSEY_FRANCE.get());
+                        output.accept(ModItems.JERSEY_ENGLAND.get());
+                        output.accept(ModItems.JERSEY_SPAIN.get());
+                        output.accept(ModItems.JERSEY_ITALY.get());
+                    })
+                    .build());
 
     public MCSoccerMod(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
@@ -36,44 +75,15 @@ public class MCSoccerMod {
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
         ModSounds.SOUND_EVENTS.register(modEventBus);
         ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
+        CREATIVE_TABS.register(modEventBus);
 
-        // Register network payloads on mod bus
         modEventBus.addListener(ModMessages::registerPayloads);
 
         NeoForge.EVENT_BUS.register(this);
-        modEventBus.addListener(this::addCreative);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("MC Soccer mod loaded!");
-    }
-
-    private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-            event.accept(ModItems.SOCCER_BALL);
-            event.accept(ModItems.GOALKEEPER_GLOVES);
-            event.accept(ModBlocks.GOAL_BLOCK_ITEM);
-        }
-
-        if (event.getTabKey() == CreativeModeTabs.COMBAT) {
-            event.accept(ModItems.JERSEY_REAL_MADRID);
-            event.accept(ModItems.JERSEY_BARCELONA);
-            event.accept(ModItems.JERSEY_BAYERN);
-            event.accept(ModItems.JERSEY_PSG);
-            event.accept(ModItems.JERSEY_MAN_CITY);
-            event.accept(ModItems.JERSEY_LIVERPOOL);
-            event.accept(ModItems.JERSEY_JUVENTUS);
-            event.accept(ModItems.JERSEY_AC_MILAN);
-
-            event.accept(ModItems.JERSEY_POLAND);
-            event.accept(ModItems.JERSEY_BRAZIL);
-            event.accept(ModItems.JERSEY_GERMANY);
-            event.accept(ModItems.JERSEY_ARGENTINA);
-            event.accept(ModItems.JERSEY_FRANCE);
-            event.accept(ModItems.JERSEY_ENGLAND);
-            event.accept(ModItems.JERSEY_SPAIN);
-            event.accept(ModItems.JERSEY_ITALY);
-        }
     }
 
     @SubscribeEvent
