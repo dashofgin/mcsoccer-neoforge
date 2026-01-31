@@ -1,0 +1,20 @@
+{
+  "ball_kick": {
+    "subtitle": "subtitles.mcsoccer.ball_kick",
+    "sounds": [
+      "mcsoccer:ball_kick"
+    ]
+  },
+  "goal_scored": {
+    "subtitle": "subtitles.mcsoccer.goal_scored",
+    "sounds": [
+      "mcsoccer:goal_scored"
+    ]
+  },
+  "whistle": {
+    "subtitle": "subtitles.mcsoccer.whistle",
+    "sounds": [
+      "mcsoccer:whistle"
+    ]
+  }
+}

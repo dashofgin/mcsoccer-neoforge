@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:leather_chestplate",
+    "minecraft:blue_dye",
+    "minecraft:white_dye",
+    "minecraft:red_dye"
+  ],
+  "result": {
+    "id": "mcsoccer:jersey_france",
+    "count": 1
+  }
+}

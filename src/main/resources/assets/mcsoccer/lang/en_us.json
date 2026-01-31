@@ -16,5 +16,9 @@
   "item.mcsoccer.jersey_england": "England Jersey",
   "item.mcsoccer.jersey_spain": "Spain Jersey",
   "item.mcsoccer.jersey_italy": "Italy Jersey",
-  "block.mcsoccer.goal": "Goal"
+  "block.mcsoccer.goal": "Goal",
+  "entity.mcsoccer.soccer_ball": "Soccer Ball",
+  "subtitles.mcsoccer.ball_kick": "Ball kicked",
+  "subtitles.mcsoccer.goal_scored": "Goal scored",
+  "subtitles.mcsoccer.whistle": "Whistle blows"
 }

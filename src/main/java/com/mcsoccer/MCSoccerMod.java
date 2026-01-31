@@ -2,8 +2,11 @@ package com.mcsoccer;
 
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
+import com.mcsoccer.block.ModBlockEntities;
 import com.mcsoccer.block.ModBlocks;
+import com.mcsoccer.entity.ModEntities;
 import com.mcsoccer.item.ModItems;
+import com.mcsoccer.sound.ModSounds;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -24,6 +27,9 @@ public class MCSoccerMod {
 
         ModItems.ITEMS.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
+        ModEntities.ENTITY_TYPES.register(modEventBus);
+        ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
+        ModSounds.SOUND_EVENTS.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(this);
         modEventBus.addListener(this::addCreative);
