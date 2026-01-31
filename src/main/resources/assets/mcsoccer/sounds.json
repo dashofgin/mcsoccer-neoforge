@@ -16,5 +16,17 @@
     "sounds": [
       "mcsoccer:whistle"
     ]
+  },
+  "tackle": {
+    "subtitle": "subtitles.mcsoccer.tackle",
+    "sounds": [
+      "mcsoccer:tackle"
+    ]
+  },
+  "slide_tackle": {
+    "subtitle": "subtitles.mcsoccer.slide_tackle",
+    "sounds": [
+      "mcsoccer:slide_tackle"
+    ]
   }
 }

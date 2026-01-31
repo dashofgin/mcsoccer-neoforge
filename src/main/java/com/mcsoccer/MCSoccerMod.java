@@ -4,9 +4,13 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 import com.mcsoccer.block.ModBlockEntities;
 import com.mcsoccer.block.ModBlocks;
+import com.mcsoccer.data.ModAttachments;
+import com.mcsoccer.data.PlayerSoccerData;
 import com.mcsoccer.entity.ModEntities;
 import com.mcsoccer.item.ModItems;
+import com.mcsoccer.network.ModMessages;
 import com.mcsoccer.sound.ModSounds;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -16,6 +20,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @Mod(MCSoccerMod.MOD_ID)
 public class MCSoccerMod {
@@ -30,6 +35,10 @@ public class MCSoccerMod {
         ModEntities.ENTITY_TYPES.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
         ModSounds.SOUND_EVENTS.register(modEventBus);
+        ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
+
+        // Register network payloads on mod bus
+        modEventBus.addListener(ModMessages::registerPayloads);
 
         NeoForge.EVENT_BUS.register(this);
         modEventBus.addListener(this::addCreative);
@@ -42,11 +51,11 @@ public class MCSoccerMod {
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(ModItems.SOCCER_BALL);
+            event.accept(ModItems.GOALKEEPER_GLOVES);
             event.accept(ModBlocks.GOAL_BLOCK_ITEM);
         }
 
         if (event.getTabKey() == CreativeModeTabs.COMBAT) {
-            // Club jerseys
             event.accept(ModItems.JERSEY_REAL_MADRID);
             event.accept(ModItems.JERSEY_BARCELONA);
             event.accept(ModItems.JERSEY_BAYERN);
@@ -56,7 +65,6 @@ public class MCSoccerMod {
             event.accept(ModItems.JERSEY_JUVENTUS);
             event.accept(ModItems.JERSEY_AC_MILAN);
 
-            // National team jerseys
             event.accept(ModItems.JERSEY_POLAND);
             event.accept(ModItems.JERSEY_BRAZIL);
             event.accept(ModItems.JERSEY_GERMANY);
@@ -71,5 +79,13 @@ public class MCSoccerMod {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("MC Soccer: Server starting!");
+    }
+
+    @SubscribeEvent
+    public void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof Player player && !player.level().isClientSide()) {
+            PlayerSoccerData data = player.getData(ModAttachments.PLAYER_SOCCER_DATA);
+            data.tick();
+        }
     }
 }

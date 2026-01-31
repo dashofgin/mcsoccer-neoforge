@@ -1,5 +1,6 @@
 {
   "item.mcsoccer.soccer_ball": "Soccer Ball",
+  "item.mcsoccer.goalkeeper_gloves": "Goalkeeper Gloves",
   "item.mcsoccer.jersey_real_madrid": "Real Madrid Jersey",
   "item.mcsoccer.jersey_barcelona": "FC Barcelona Jersey",
   "item.mcsoccer.jersey_bayern": "Bayern Munich Jersey",
@@ -20,5 +21,14 @@
   "entity.mcsoccer.soccer_ball": "Soccer Ball",
   "subtitles.mcsoccer.ball_kick": "Ball kicked",
   "subtitles.mcsoccer.goal_scored": "Goal scored",
-  "subtitles.mcsoccer.whistle": "Whistle blows"
+  "subtitles.mcsoccer.whistle": "Whistle blows",
+  "subtitles.mcsoccer.tackle": "Tackle",
+  "subtitles.mcsoccer.slide_tackle": "Slide tackle",
+  "key.categories.mcsoccer": "MC Soccer",
+  "key.mcsoccer.long_pass": "Long Pass",
+  "key.mcsoccer.short_pass": "Short Pass",
+  "key.mcsoccer.curve_shot": "Curve Shot",
+  "key.mcsoccer.knuckleball": "Knuckleball",
+  "key.mcsoccer.standing_tackle": "Standing Tackle",
+  "key.mcsoccer.slide_tackle": "Slide Tackle"
 }

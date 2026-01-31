@@ -15,6 +15,11 @@ public class ModItems {
     public static final DeferredItem<Item> SOCCER_BALL = ITEMS.registerItem("soccer_ball",
             SoccerBallItem::new, new Item.Properties().stacksTo(16));
 
+    // ==================== GOALKEEPER GLOVES ====================
+
+    public static final DeferredItem<Item> GOALKEEPER_GLOVES = ITEMS.registerItem("goalkeeper_gloves",
+            GoalkeeperGlovesItem::new);
+
     // ==================== CLUB JERSEYS ====================
 
     public static final DeferredItem<Item> JERSEY_REAL_MADRID = registerJersey("jersey_real_madrid");

@@ -32,4 +32,14 @@ public class ModSounds {
             SOUND_EVENTS.register("whistle", () ->
                     SoundEvent.createVariableRangeEvent(
                             ResourceLocation.fromNamespaceAndPath(MCSoccerMod.MOD_ID, "whistle")));
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> TACKLE =
+            SOUND_EVENTS.register("tackle", () ->
+                    SoundEvent.createVariableRangeEvent(
+                            ResourceLocation.fromNamespaceAndPath(MCSoccerMod.MOD_ID, "tackle")));
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> SLIDE_TACKLE =
+            SOUND_EVENTS.register("slide_tackle", () ->
+                    SoundEvent.createVariableRangeEvent(
+                            ResourceLocation.fromNamespaceAndPath(MCSoccerMod.MOD_ID, "slide_tackle")));
 }
