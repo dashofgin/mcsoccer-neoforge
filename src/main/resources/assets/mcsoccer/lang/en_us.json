@@ -1,0 +1,20 @@
+{
+  "item.mcsoccer.soccer_ball": "Soccer Ball",
+  "item.mcsoccer.jersey_real_madrid": "Real Madrid Jersey",
+  "item.mcsoccer.jersey_barcelona": "FC Barcelona Jersey",
+  "item.mcsoccer.jersey_bayern": "Bayern Munich Jersey",
+  "item.mcsoccer.jersey_psg": "Paris Saint-Germain Jersey",
+  "item.mcsoccer.jersey_man_city": "Manchester City Jersey",
+  "item.mcsoccer.jersey_liverpool": "Liverpool FC Jersey",
+  "item.mcsoccer.jersey_juventus": "Juventus Jersey",
+  "item.mcsoccer.jersey_ac_milan": "AC Milan Jersey",
+  "item.mcsoccer.jersey_poland": "Poland Jersey",
+  "item.mcsoccer.jersey_brazil": "Brazil Jersey",
+  "item.mcsoccer.jersey_germany": "Germany Jersey",
+  "item.mcsoccer.jersey_argentina": "Argentina Jersey",
+  "item.mcsoccer.jersey_france": "France Jersey",
+  "item.mcsoccer.jersey_england": "England Jersey",
+  "item.mcsoccer.jersey_spain": "Spain Jersey",
+  "item.mcsoccer.jersey_italy": "Italy Jersey",
+  "block.mcsoccer.goal": "Goal"
+}
