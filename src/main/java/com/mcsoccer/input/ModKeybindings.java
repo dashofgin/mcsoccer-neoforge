@@ -8,7 +8,7 @@ import org.lwjgl.glfw.GLFW;
 
 public class ModKeybindings {
     public static final KeyMapping.Category CATEGORY =
-            KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath(MCSoccerMod.MOD_ID, "mcsoccer"));
+            new KeyMapping.Category(ResourceLocation.fromNamespaceAndPath(MCSoccerMod.MOD_ID, "mcsoccer"));
 
     public static final KeyMapping LONG_PASS = new KeyMapping(
             "key.mcsoccer.long_pass", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Z, CATEGORY);

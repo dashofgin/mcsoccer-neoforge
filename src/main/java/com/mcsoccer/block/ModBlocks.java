@@ -12,11 +12,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MCSoccerMod.MOD_ID);
 
-    public static final DeferredBlock<GoalBlock> GOAL = BLOCKS.registerBlock("goal",
-            GoalBlock::new, BlockBehaviour.Properties.of()
+    public static final DeferredBlock<GoalBlock> GOAL = BLOCKS.register("goal",
+            () -> new GoalBlock(BlockBehaviour.Properties.of()
                     .strength(1.5f)
                     .sound(SoundType.METAL)
-                    .noOcclusion());
+                    .noOcclusion()));
 
     // Block item registered via ModItems
     public static final DeferredItem<BlockItem> GOAL_BLOCK_ITEM = ModItems.ITEMS.registerSimpleBlockItem("goal", GOAL);

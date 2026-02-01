@@ -40,6 +40,7 @@ public class ClientEvents {
     }
 
     public static void registerKeys(RegisterKeyMappingsEvent event) {
+        event.registerCategory(ModKeybindings.CATEGORY);
         event.register(ModKeybindings.LONG_PASS);
         event.register(ModKeybindings.SHORT_PASS);
         event.register(ModKeybindings.CURVE_SHOT);
