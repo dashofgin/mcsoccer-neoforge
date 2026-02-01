@@ -21,18 +21,30 @@ import net.minecraft.world.entity.projectile.ItemSupplier;
 
 public class SoccerBallEntity extends Entity implements ItemSupplier {
 
+    // Physics constants
     private static final double GRAVITY = 0.04;
-    private static final double AIR_FRICTION = 0.98;
-    private static final double GROUND_FRICTION = 0.85;
-    private static final double BOUNCE_FACTOR = 0.6;
-    private static final double MIN_MOTION = 0.001;
+    private static final double AIR_DRAG_XZ = 0.98;
+    private static final double AIR_DRAG_Y = 0.98;
+    private static final double GROUND_FRICTION = 0.82;
+    private static final double BOUNCE_FACTOR = 0.55;
+    private static final double MIN_MOTION = 0.003;
 
+    // Kick constants
     private static final double KICK_POWER = 1.2;
     private static final double KICK_UP = 0.3;
     private static final double PASS_POWER = 0.8;
     private static final double PASS_UP = 0.15;
 
+    // Dribble
+    private static final double DRIBBLE_SPEED = 0.2;
+    private static final int DRIBBLE_COOLDOWN_TICKS = 3;
+
     private Player lastKicker = null;
+    private int dribbleCooldown = 0;
+
+    // Goal state - prevents physics while goal is being processed
+    private boolean goalScored = false;
+    private int goalFreezeTimer = 0;
 
     public SoccerBallEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -52,15 +64,29 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     public void tick() {
         super.tick();
 
+        // If goal was scored, freeze ball for a period
+        if (goalScored) {
+            setDeltaMovement(Vec3.ZERO);
+            if (goalFreezeTimer > 0) {
+                goalFreezeTimer--;
+            } else {
+                goalScored = false;
+            }
+            return;
+        }
+
+        if (dribbleCooldown > 0) dribbleCooldown--;
+
         Vec3 motion = getDeltaMovement();
 
         // Apply gravity
         motion = motion.add(0, -GRAVITY, 0);
 
-        // Move with collision detection
+        // Set motion before move so collision detection works
+        setDeltaMovement(motion);
         move(MoverType.SELF, motion);
 
-        // After move(), getDeltaMovement() is adjusted by collisions
+        // After move(), getDeltaMovement() reflects collision adjustments
         motion = getDeltaMovement();
 
         // Handle bouncing off walls
@@ -76,7 +102,8 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
         if (verticalCollision) {
             if (onGround()) {
                 double ySpeed = Math.abs(motion.y);
-                if (ySpeed > 0.05) {
+                if (ySpeed > 0.08) {
+                    // Bounce
                     motion = new Vec3(
                             motion.x * GROUND_FRICTION,
                             -motion.y * BOUNCE_FACTOR,
@@ -87,20 +114,27 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
                                 SoundEvents.SLIME_BLOCK_STEP, SoundSource.NEUTRAL, 0.3F, 1.5F);
                     }
                 } else {
+                    // Settled on ground - apply strong ground friction
                     motion = new Vec3(motion.x * GROUND_FRICTION, 0, motion.z * GROUND_FRICTION);
                 }
             } else {
+                // Hit ceiling
                 motion = new Vec3(motion.x, -motion.y * BOUNCE_FACTOR, motion.z);
             }
         }
 
-        // Air drag
-        if (!onGround() && !verticalCollision && !horizontalCollision) {
-            motion = motion.multiply(AIR_FRICTION, 1.0, AIR_FRICTION);
+        // Air drag when airborne
+        if (!onGround()) {
+            motion = new Vec3(motion.x * AIR_DRAG_XZ, motion.y * AIR_DRAG_Y, motion.z * AIR_DRAG_XZ);
+        }
+
+        // Ground rolling friction (always apply when on ground, even outside bounce)
+        if (onGround() && !verticalCollision) {
+            motion = new Vec3(motion.x * GROUND_FRICTION, motion.y, motion.z * GROUND_FRICTION);
         }
 
         // Stop if very slow
-        if (motion.lengthSqr() < MIN_MOTION) {
+        if (motion.lengthSqr() < MIN_MOTION * MIN_MOTION) {
             motion = Vec3.ZERO;
         }
 
@@ -111,6 +145,8 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         if (!level().isClientSide()) {
+            if (goalScored) return InteractionResult.PASS;
+
             if (player.isShiftKeyDown()) {
                 ItemStack ball = new ItemStack(ModItems.SOCCER_BALL.get());
                 if (!player.getInventory().add(ball)) {
@@ -131,6 +167,7 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     // Left-click = power kick
     @Override
     public boolean hurtServer(ServerLevel serverLevel, DamageSource source, float amount) {
+        if (goalScored) return false;
         if (source.getEntity() instanceof Player player) {
             Vec3 look = player.getLookAngle();
             setDeltaMovement(look.x * KICK_POWER, KICK_UP + look.y * 0.5, look.z * KICK_POWER);
@@ -140,6 +177,17 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
             return false;
         }
         return false;
+    }
+
+    /** Called by GoalBlockEntity to freeze ball after goal */
+    public void onGoalScored() {
+        this.goalScored = true;
+        this.goalFreezeTimer = 60; // 3 seconds freeze
+        setDeltaMovement(Vec3.ZERO);
+    }
+
+    public boolean isGoalFrozen() {
+        return goalScored;
     }
 
     @Override
@@ -154,9 +202,20 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
 
     @Override
     public void push(Entity entity) {
-        if (entity instanceof Player) {
-            Vec3 diff = position().subtract(entity.position()).normalize();
-            setDeltaMovement(getDeltaMovement().add(diff.x * 0.15, 0.05, diff.z * 0.15));
+        if (goalScored) return;
+        if (entity instanceof Player player) {
+            if (dribbleCooldown > 0) return;
+            // Dribble: move ball in player's look direction (horizontal only)
+            double yaw = Math.toRadians(player.getYRot());
+            double forwardX = -Math.sin(yaw);
+            double forwardZ = Math.cos(yaw);
+            setDeltaMovement(new Vec3(
+                    forwardX * DRIBBLE_SPEED,
+                    getDeltaMovement().y, // preserve Y momentum
+                    forwardZ * DRIBBLE_SPEED
+            ));
+            lastKicker = player;
+            dribbleCooldown = DRIBBLE_COOLDOWN_TICKS;
         }
     }
 

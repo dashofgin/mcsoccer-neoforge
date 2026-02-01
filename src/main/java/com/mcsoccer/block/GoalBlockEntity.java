@@ -23,6 +23,8 @@ import java.util.List;
 public class GoalBlockEntity extends BlockEntity {
 
     private int cooldown = 0;
+    private static final int GOAL_COOLDOWN = 80; // 4 seconds
+    private static final double DETECTION_RADIUS_SQ = 2.25; // 1.5^2
 
     public GoalBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GOAL.get(), pos, state);
@@ -34,18 +36,24 @@ public class GoalBlockEntity extends BlockEntity {
             return;
         }
 
-        // Scan for soccer ball entities in a 4-block radius around the goal
-        AABB detectionBox = new AABB(pos).inflate(4.0, 3.0, 4.0);
+        AABB detectionBox = new AABB(pos).inflate(3.0, 2.0, 3.0);
         List<SoccerBallEntity> balls = level.getEntitiesOfClass(SoccerBallEntity.class, detectionBox);
 
         for (SoccerBallEntity ball : balls) {
-            // Check if ball is within 1.5 blocks of the goal (close enough = goal scored)
+            // Skip balls that are already frozen from a goal
+            if (ball.isGoalFrozen()) continue;
+
             double dist = ball.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
-            if (dist < 2.25) { // 1.5^2
+            if (dist < DETECTION_RADIUS_SQ) {
                 // GOAL!
                 Player scorer = ball.getLastKicker();
                 String scorerName = scorer != null ? scorer.getName().getString() : "Unknown";
 
+                // Freeze the ball immediately to prevent double scoring
+                ball.onGoalScored();
+                ball.setPos(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5);
+
+                // Play sounds
                 level.playSound(null, pos, SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.BLOCKS, 2.0F, 1.0F);
                 level.playSound(null, pos, SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.BLOCKS, 1.5F, 1.0F);
 
@@ -66,20 +74,18 @@ public class GoalBlockEntity extends BlockEntity {
                     scoreboard.getOrCreatePlayerScore(scorer, objective).increment();
                 }
 
-                // Broadcast goal message to all nearby players
+                // Broadcast goal message (chat, not actionbar)
+                String message = scorer != null
+                        ? "\u00A76\u00A7l\u26BD GOAL! " + scorerName + " scores! \u26BD"
+                        : "\u00A76\u00A7l\u26BD GOAL! \u26BD";
+
                 level.players().forEach(player -> {
-                    if (player.distanceToSqr(pos.getX(), pos.getY(), pos.getZ()) < 4096) { // 64 blocks
-                        player.displayClientMessage(
-                                Component.literal("\u00A76\u00A7l\u26BD GOAL by " + scorerName + "! \u26BD"), true);
+                    if (player.distanceToSqr(pos.getX(), pos.getY(), pos.getZ()) < 4096) {
+                        player.displayClientMessage(Component.literal(message), false);
                     }
                 });
 
-                // Reset ball position (move it up and stop it)
-                ball.setPos(pos.getX() + 0.5, pos.getY() + 2.0, pos.getZ() + 0.5);
-                ball.setDeltaMovement(0, 0, 0);
-
-                // Cooldown to prevent spam (3 seconds = 60 ticks)
-                be.cooldown = 60;
+                be.cooldown = GOAL_COOLDOWN;
                 break;
             }
         }
