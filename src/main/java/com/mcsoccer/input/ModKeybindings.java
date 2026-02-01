@@ -15,11 +15,11 @@ public class ModKeybindings {
     public static final KeyMapping SHORT_PASS = new KeyMapping(
             "key.mcsoccer.short_pass", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_X, CATEGORY);
     public static final KeyMapping CURVE_SHOT = new KeyMapping(
-            "key.mcsoccer.curve_shot", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_M, CATEGORY);
+            "key.mcsoccer.curve_shot", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_V, CATEGORY);
     public static final KeyMapping KNUCKLEBALL = new KeyMapping(
-            "key.mcsoccer.knuckleball", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, CATEGORY);
+            "key.mcsoccer.knuckleball", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY);
     public static final KeyMapping STANDING_TACKLE = new KeyMapping(
-            "key.mcsoccer.standing_tackle", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_N, CATEGORY);
+            "key.mcsoccer.standing_tackle", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, CATEGORY);
     public static final KeyMapping SLIDE_TACKLE = new KeyMapping(
-            "key.mcsoccer.slide_tackle", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY);
+            "key.mcsoccer.slide_tackle", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, CATEGORY);
 }

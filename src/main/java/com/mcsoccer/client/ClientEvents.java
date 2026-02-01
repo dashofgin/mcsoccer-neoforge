@@ -1,12 +1,12 @@
 package com.mcsoccer.client;
 
 import com.mcsoccer.MCSoccerMod;
+import com.mcsoccer.client.renderer.SoccerBallRenderer;
 import com.mcsoccer.entity.ModEntities;
 import com.mcsoccer.input.ModKeybindings;
 import com.mcsoccer.network.KickAction;
 import com.mcsoccer.network.KickActionPayload;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -17,21 +17,6 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 @EventBusSubscriber(modid = MCSoccerMod.MOD_ID, value = Dist.CLIENT)
 public class ClientEvents {
-
-    @SubscribeEvent
-    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ModEntities.SOCCER_BALL.get(), ThrownItemRenderer::new);
-    }
-
-    @SubscribeEvent
-    public static void registerKeys(RegisterKeyMappingsEvent event) {
-        event.register(ModKeybindings.LONG_PASS);
-        event.register(ModKeybindings.SHORT_PASS);
-        event.register(ModKeybindings.CURVE_SHOT);
-        event.register(ModKeybindings.KNUCKLEBALL);
-        event.register(ModKeybindings.STANDING_TACKLE);
-        event.register(ModKeybindings.SLIDE_TACKLE);
-    }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -47,5 +32,19 @@ public class ClientEvents {
         while (key.consumeClick()) {
             ClientPacketDistributor.sendToServer(new KickActionPayload(action));
         }
+    }
+
+    // Called from MCSoccerMod via modEventBus.addListener
+    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(ModEntities.SOCCER_BALL.get(), context -> new SoccerBallRenderer(context));
+    }
+
+    public static void registerKeys(RegisterKeyMappingsEvent event) {
+        event.register(ModKeybindings.LONG_PASS);
+        event.register(ModKeybindings.SHORT_PASS);
+        event.register(ModKeybindings.CURVE_SHOT);
+        event.register(ModKeybindings.KNUCKLEBALL);
+        event.register(ModKeybindings.STANDING_TACKLE);
+        event.register(ModKeybindings.SLIDE_TACKLE);
     }
 }

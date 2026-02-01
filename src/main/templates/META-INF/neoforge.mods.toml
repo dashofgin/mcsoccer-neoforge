@@ -21,3 +21,10 @@ description='''MC Soccer - football mod with ball, goals and team jerseys!'''
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="geckolib"
+    type="required"
+    versionRange="[5.3-alpha-3,)"
+    ordering="NONE"
+    side="BOTH"

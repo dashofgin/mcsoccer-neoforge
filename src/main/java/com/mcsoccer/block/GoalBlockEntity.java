@@ -87,8 +87,8 @@ public class GoalBlockEntity extends BlockEntity {
                 }
 
                 String message = scorer != null
-                        ? "\u00A76\u00A7l\u26BD GOAL! " + scorerName + " scores! \u26BD"
-                        : "\u00A76\u00A7l\u26BD GOAL! \u26BD";
+                        ? "\u00A76\u00A7l\u26BD GOL! " + scorerName + " zdobył punkt! \u26BD"
+                        : "\u00A76\u00A7l\u26BD GOL! \u26BD";
 
                 level.players().forEach(player -> {
                     if (player.distanceToSqr(pos.getX(), pos.getY(), pos.getZ()) < 4096) {

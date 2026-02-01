@@ -13,6 +13,17 @@ version = mod_version
 group = mod_group_id
 
 repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'GeckoLib'
+                url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+            }
+        }
+        filter {
+            includeGroup('software.bernie.geckolib')
+        }
+    }
 }
 
 base {
@@ -71,6 +82,7 @@ configurations {
 }
 
 dependencies {
+    implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

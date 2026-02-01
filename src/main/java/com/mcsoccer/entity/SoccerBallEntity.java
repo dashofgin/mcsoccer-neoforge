@@ -21,10 +21,21 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.projectile.ItemSupplier;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animatable.manager.AnimatableManager;
+import software.bernie.geckolib.animatable.processing.AnimationController;
+import software.bernie.geckolib.animation.PlayState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Random;
 
-public class SoccerBallEntity extends Entity implements ItemSupplier {
+public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity {
+
+    private static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.soccer_ball.idle");
+    private static final RawAnimation ROLL_ANIM = RawAnimation.begin().thenLoop("animation.soccer_ball.rolling");
+    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     // Physics constants
     private static final double GRAVITY = 0.04;
@@ -79,6 +90,7 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        // No synched data needed for this entity
     }
 
     @Override
@@ -450,5 +462,21 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     @Override
     public boolean isInvulnerable() {
         return true;
+    }
+
+    // GeoEntity implementation
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>("movement", 5, state -> {
+            if (getDeltaMovement().horizontalDistanceSqr() > 0.001) {
+                return state.setAndContinue(ROLL_ANIM);
+            }
+            return state.setAndContinue(IDLE_ANIM);
+        }));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.geoCache;
     }
 }
