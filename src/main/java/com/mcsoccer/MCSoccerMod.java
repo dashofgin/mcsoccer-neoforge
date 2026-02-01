@@ -6,6 +6,7 @@ import com.mcsoccer.block.ModBlockEntities;
 import com.mcsoccer.block.ModBlocks;
 import com.mcsoccer.entity.ModEntities;
 import com.mcsoccer.item.ModItems;
+import com.mcsoccer.command.ModCommands;
 import com.mcsoccer.sound.ModSounds;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -17,6 +18,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -80,5 +82,10 @@ public class MCSoccerMod {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("MC Soccer: Server starting!");
+    }
+
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        ModCommands.register(event.getDispatcher());
     }
 }

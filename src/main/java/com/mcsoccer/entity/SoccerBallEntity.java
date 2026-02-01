@@ -45,6 +45,7 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     // Goal state - prevents physics while goal is being processed
     private boolean goalScored = false;
     private int goalFreezeTimer = 0;
+    private Vec3 ejectVelocity = null;
 
     public SoccerBallEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -71,6 +72,10 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
                 goalFreezeTimer--;
             } else {
                 goalScored = false;
+                if (ejectVelocity != null) {
+                    setDeltaMovement(ejectVelocity);
+                    ejectVelocity = null;
+                }
             }
             return;
         }
@@ -183,7 +188,13 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     public void onGoalScored() {
         this.goalScored = true;
         this.goalFreezeTimer = 60; // 3 seconds freeze
+        this.ejectVelocity = null;
         setDeltaMovement(Vec3.ZERO);
+    }
+
+    /** Set velocity to apply when freeze ends (ball ejected from goal) */
+    public void setEjectVelocity(Vec3 velocity) {
+        this.ejectVelocity = velocity;
     }
 
     public boolean isGoalFrozen() {

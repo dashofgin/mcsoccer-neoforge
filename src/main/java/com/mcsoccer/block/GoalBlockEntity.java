@@ -2,6 +2,7 @@ package com.mcsoccer.block;
 
 import com.mcsoccer.entity.SoccerBallEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -13,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Scoreboard;
@@ -25,6 +27,8 @@ public class GoalBlockEntity extends BlockEntity {
     private int cooldown = 0;
     private static final int GOAL_COOLDOWN = 80; // 4 seconds
     private static final double DETECTION_RADIUS_SQ = 2.25; // 1.5^2
+    private static final double EJECT_DISTANCE = 6.0;
+    private static final double EJECT_SPEED = 0.8;
 
     public GoalBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GOAL.get(), pos, state);
@@ -40,18 +44,26 @@ public class GoalBlockEntity extends BlockEntity {
         List<SoccerBallEntity> balls = level.getEntitiesOfClass(SoccerBallEntity.class, detectionBox);
 
         for (SoccerBallEntity ball : balls) {
-            // Skip balls that are already frozen from a goal
             if (ball.isGoalFrozen()) continue;
 
             double dist = ball.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
             if (dist < DETECTION_RADIUS_SQ) {
-                // GOAL!
                 Player scorer = ball.getLastKicker();
                 String scorerName = scorer != null ? scorer.getName().getString() : "Unknown";
 
-                // Freeze the ball immediately to prevent double scoring
+                // Get facing direction of the goal block
+                Direction facing = state.getValue(GoalBlock.FACING);
+                Vec3 forward = new Vec3(facing.getStepX(), 0, facing.getStepZ());
+
+                // Freeze ball, position 6 blocks in front of goal (not up)
                 ball.onGoalScored();
-                ball.setPos(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5);
+                ball.setPos(
+                        pos.getX() + 0.5 + forward.x * EJECT_DISTANCE,
+                        pos.getY() + 0.5,
+                        pos.getZ() + 0.5 + forward.z * EJECT_DISTANCE
+                );
+                // Set forward velocity to apply after freeze ends
+                ball.setEjectVelocity(new Vec3(forward.x * EJECT_SPEED, 0.05, forward.z * EJECT_SPEED));
 
                 // Play sounds
                 level.playSound(null, pos, SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.BLOCKS, 2.0F, 1.0F);
@@ -74,7 +86,6 @@ public class GoalBlockEntity extends BlockEntity {
                     scoreboard.getOrCreatePlayerScore(scorer, objective).increment();
                 }
 
-                // Broadcast goal message (chat, not actionbar)
                 String message = scorer != null
                         ? "\u00A76\u00A7l\u26BD GOAL! " + scorerName + " scores! \u26BD"
                         : "\u00A76\u00A7l\u26BD GOAL! \u26BD";
