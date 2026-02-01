@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 import com.mcsoccer.block.ModBlockEntities;
 import com.mcsoccer.block.ModBlocks;
+import com.mcsoccer.command.ModCommands;
 import com.mcsoccer.data.ModAttachments;
 import com.mcsoccer.data.PlayerSoccerData;
 import com.mcsoccer.entity.ModEntities;
@@ -21,6 +22,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -97,5 +99,10 @@ public class MCSoccerMod {
             PlayerSoccerData data = player.getData(ModAttachments.PLAYER_SOCCER_DATA);
             data.tick();
         }
+    }
+
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        ModCommands.register(event.getDispatcher());
     }
 }

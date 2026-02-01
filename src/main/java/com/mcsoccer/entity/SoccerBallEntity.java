@@ -65,6 +65,7 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     // Goal state - prevents physics while goal is being processed
     private boolean goalScored = false;
     private int goalFreezeTimer = 0;
+    private Vec3 ejectVelocity = null;
 
     public SoccerBallEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -91,6 +92,10 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
                 goalFreezeTimer--;
             } else {
                 goalScored = false;
+                if (ejectVelocity != null) {
+                    setDeltaMovement(ejectVelocity);
+                    ejectVelocity = null;
+                }
             }
             return;
         }
@@ -160,7 +165,6 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
             if (onGround()) {
                 double ySpeed = Math.abs(motion.y);
                 if (ySpeed > 0.08) {
-                    // Bounce
                     motion = new Vec3(
                             motion.x * GROUND_FRICTION,
                             -motion.y * BOUNCE_FACTOR,
@@ -171,11 +175,9 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
                                 SoundEvents.SLIME_BLOCK_STEP, SoundSource.NEUTRAL, 0.3F, 1.5F);
                     }
                 } else {
-                    // Settled on ground - apply strong ground friction
                     motion = new Vec3(motion.x * GROUND_FRICTION, 0, motion.z * GROUND_FRICTION);
                 }
             } else {
-                // Hit ceiling
                 motion = new Vec3(motion.x, -motion.y * BOUNCE_FACTOR, motion.z);
             }
         }
@@ -185,7 +187,7 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
             motion = new Vec3(motion.x * AIR_DRAG_XZ, motion.y * AIR_DRAG_Y, motion.z * AIR_DRAG_XZ);
         }
 
-        // Ground rolling friction (always apply when on ground, even outside bounce)
+        // Ground rolling friction
         if (onGround() && !verticalCollision) {
             motion = new Vec3(motion.x * GROUND_FRICTION, motion.y, motion.z * GROUND_FRICTION);
         }
@@ -201,7 +203,6 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
         setDeltaMovement(motion);
     }
 
-    // Right-click = soft pass, sneak+right-click = pick up
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         if (!level().isClientSide()) {
@@ -224,7 +225,6 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
         return InteractionResult.SUCCESS;
     }
 
-    // Left-click = power kick
     @Override
     public boolean hurtServer(ServerLevel serverLevel, DamageSource source, float amount) {
         if (goalScored) return false;
@@ -354,7 +354,6 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
 
         lastKicker = player;
 
-        // Slow down the kicking player briefly
         Vec3 currentMotion = player.getDeltaMovement();
         player.setDeltaMovement(currentMotion.x * 0.4, currentMotion.y, currentMotion.z * 0.4);
         player.hurtMarked = true;
@@ -374,14 +373,19 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
     /** Called by GoalBlockEntity to freeze ball after goal */
     public void onGoalScored() {
         this.goalScored = true;
-        this.goalFreezeTimer = 60; // 3 seconds freeze
+        this.goalFreezeTimer = 60;
+        this.ejectVelocity = null;
         setDeltaMovement(Vec3.ZERO);
-        // Reset all effects
         spinForce = Vec3.ZERO;
         spinTicksRemaining = 0;
         knuckleballActive = false;
         knuckleballTicksRemaining = 0;
         dragPhase = dragPhaseMax;
+    }
+
+    /** Set velocity to apply when freeze ends (ball ejected from goal) */
+    public void setEjectVelocity(Vec3 velocity) {
+        this.ejectVelocity = velocity;
     }
 
     public boolean isGoalFrozen() {
@@ -408,13 +412,12 @@ public class SoccerBallEntity extends Entity implements ItemSupplier {
                 PlayerSoccerData data = player.getData(ModAttachments.PLAYER_SOCCER_DATA);
                 if (!data.canTouchBall()) return;
             }
-            // Dribble: move ball in player's look direction (horizontal only)
             double yaw = Math.toRadians(player.getYRot());
             double forwardX = -Math.sin(yaw);
             double forwardZ = Math.cos(yaw);
             setDeltaMovement(new Vec3(
                     forwardX * DRIBBLE_SPEED,
-                    getDeltaMovement().y, // preserve Y momentum
+                    getDeltaMovement().y,
                     forwardZ * DRIBBLE_SPEED
             ));
             lastKicker = player;

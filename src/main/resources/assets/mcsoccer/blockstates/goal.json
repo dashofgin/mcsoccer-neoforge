@@ -1,5 +1,8 @@
 {
   "variants": {
-    "": { "model": "mcsoccer:block/goal" }
+    "facing=north": { "model": "mcsoccer:block/goal" },
+    "facing=south": { "model": "mcsoccer:block/goal", "y": 180 },
+    "facing=west": { "model": "mcsoccer:block/goal", "y": 270 },
+    "facing=east": { "model": "mcsoccer:block/goal", "y": 90 }
   }
 }
