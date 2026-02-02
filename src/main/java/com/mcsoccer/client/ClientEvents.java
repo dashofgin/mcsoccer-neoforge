@@ -30,6 +30,10 @@ public class ClientEvents {
 
     private static void checkAndSend(KeyMapping key, KickAction action) {
         while (key.consumeClick()) {
+            // Trigger animation immediately for responsiveness (requires PAL)
+            AnimationHandler.triggerAnimation(action);
+
+            // Send to server for game logic
             ClientPacketDistributor.sendToServer(new KickActionPayload(action));
         }
     }

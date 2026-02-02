@@ -24,6 +24,17 @@ repositories {
             includeGroup('software.bernie.geckolib')
         }
     }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+    }
+    maven {
+        url = "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+    mavenCentral()
 }
 
 base {
@@ -83,6 +94,10 @@ configurations {
 
 dependencies {
     implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+    // PlayerAnimator is optional - users must install it separately from:
+    // https://www.curseforge.com/minecraft/mc-mods/playeranimator (CurseForge)
+    // https://modrinth.com/mod/playeranimator (Modrinth)
+    // Animations will work when PlayerAnimator is installed as a mod
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

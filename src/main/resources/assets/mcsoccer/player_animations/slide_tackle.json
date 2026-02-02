@@ -1,0 +1,67 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"slide_tackle": {
+			"animation_length": 0.8,
+			"loop": false,
+			"bones": {
+				"body": {
+					"position": {
+						"0.0": {"vector": [0,0,0]},
+						"0.2": {"vector": [0, -10, 2], "easing": "easeInSine"},
+						"0.4": {"vector": [0, -19, 8], "easing": "linear"},
+						"0.6": {"vector": [0, -19, 7], "easing": "easeOutSine"},
+						"0.8": {"vector": [0,0,0]}
+					}
+				},
+				"torso": {
+					"rotation": {
+						"0.0": {"vector": [0,0,0]},
+						"0.2": {"vector": [-45, 0, 5]},
+						"0.4": {"vector": [-85, 0, 0]},
+						"0.6": {"vector": [-75, 0, -5]},
+						"0.8": {"vector": [0,0,0]}
+					}
+				},
+				"head": {"rotation": {"0.2": [30,0,0], "0.4": [45,0,0], "0.6": [35,0,0], "0.8": [0,0,0]}},
+				"right_arm": {
+					"rotation": {"0.0": [0,0,0], "0.2": [-60,20,10], "0.4": [-110,30,20], "0.6": [-100,25,15], "0.8": [0,0,0]}
+				},
+				"left_arm": {
+					"rotation": {"0.0": [0,0,0], "0.2": [-50,-25,-15], "0.4": [-100,-35,-25], "0.6": [-90,-30,-20], "0.8": [0,0,0]},
+					"position": {"0.4": [0,1,0]}
+				},
+				"right_leg": { 
+					"rotation": {
+						"0.0": {"vector": [0,0,0]},
+						"0.15": {"vector": [-90, 5, 2], "easing": "easeInExpo"},
+						"0.3": {"vector": [-90, 0, 0], "easing": "linear"},      
+						"0.5": {"vector": [-80, -5, -2], "easing": "easeOutSine"},
+						"0.8": {"vector": [0,0,0]}
+					},
+					"position": {
+						"0.0": {"vector": [0,0,0]},
+						"0.3": {"vector": [0,0.5,7]},
+						"0.5": {"vector": [0,0.5,6]},
+						"0.8": {"vector": [0,0,0]}
+					}
+				},
+				"left_leg": { 
+					"rotation": {
+						"0.0": {"vector": [0,0,0]},
+						"0.1": {"vector": [-45, -5, -2], "easing": "easeInExpo"},
+						"0.25": {"vector": [-110, -10, -5], "easing": "linear"}, 
+						"0.5": {"vector": [-100, 0, 0], "easing": "easeOutSine"},  
+						"0.8": {"vector": [0,0,0]}
+					},
+					"position": {
+						"0.0": {"vector": [0,0,0]},
+						"0.25": {"vector": [0,3,2]},
+						"0.5": {"vector": [0,2,1]},
+						"0.8": {"vector": [0,0,0]}
+					}
+				}
+			}
+		}
+	}
+}
