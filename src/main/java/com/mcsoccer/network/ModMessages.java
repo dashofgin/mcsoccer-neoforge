@@ -45,7 +45,7 @@ public class ModMessages {
     }
 
     private static void handleShot(ServerPlayer player, KickAction action) {
-        SoccerBallEntity ball = findNearestBall(player, 2.5);
+        SoccerBallEntity ball = findNearestBall(player, 4.0);
         if (ball == null) return;
 
         ball.applyKick(player, action);
@@ -56,7 +56,7 @@ public class ModMessages {
     }
 
     private static void handleStandingTackle(ServerPlayer player) {
-        SoccerBallEntity ball = findNearestBall(player, 2.5);
+        SoccerBallEntity ball = findNearestBall(player, 4.0);
         if (ball == null) return;
 
         Vec3 look = player.getLookAngle();
@@ -90,7 +90,7 @@ public class ModMessages {
         player.push(look.x * 0.8, 0.05, look.z * 0.8);
         player.hurtMarked = true;
 
-        SoccerBallEntity ball = findNearestBall(player, 3.0);
+        SoccerBallEntity ball = findNearestBall(player, 4.5);
         if (ball != null) {
             double speed = player.getDeltaMovement().horizontalDistance();
             double power = 0.9 + speed * 0.3;

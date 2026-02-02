@@ -31,7 +31,6 @@ public class ModArmorMaterials {
     public static final ResourceKey<EquipmentAsset> JERSEY_ENGLAND_ASSET = jerseyAsset("jersey_england");
     public static final ResourceKey<EquipmentAsset> JERSEY_SPAIN_ASSET = jerseyAsset("jersey_spain");
     public static final ResourceKey<EquipmentAsset> JERSEY_ITALY_ASSET = jerseyAsset("jersey_italy");
-
     public static final ArmorMaterial JERSEY_REAL_MADRID = jerseyMaterial(JERSEY_REAL_MADRID_ASSET);
     public static final ArmorMaterial JERSEY_BARCELONA = jerseyMaterial(JERSEY_BARCELONA_ASSET);
     public static final ArmorMaterial JERSEY_BAYERN = jerseyMaterial(JERSEY_BAYERN_ASSET);

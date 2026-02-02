@@ -42,7 +42,6 @@ public class ModItems {
     public static final DeferredItem<Item> JERSEY_ENGLAND = registerJersey("jersey_england", ModArmorMaterials.JERSEY_ENGLAND);
     public static final DeferredItem<Item> JERSEY_SPAIN = registerJersey("jersey_spain", ModArmorMaterials.JERSEY_SPAIN);
     public static final DeferredItem<Item> JERSEY_ITALY = registerJersey("jersey_italy", ModArmorMaterials.JERSEY_ITALY);
-
     private static DeferredItem<Item> registerJersey(String name, ArmorMaterial material) {
         return ITEMS.registerItem(name,
                 properties -> new Item(properties.humanoidArmor(material, ArmorType.CHESTPLATE)));
