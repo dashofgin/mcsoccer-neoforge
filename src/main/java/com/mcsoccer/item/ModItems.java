@@ -21,6 +21,17 @@ public class ModItems {
     public static final DeferredItem<Item> GOALKEEPER_GLOVES = ITEMS.registerItem("goalkeeper_gloves",
             GoalkeeperGlovesItem::new);
 
+    // ==================== REFEREE ITEMS ====================
+
+    public static final DeferredItem<Item> WHISTLE = ITEMS.registerItem("whistle",
+            WhistleItem::new);
+
+    public static final DeferredItem<Item> YELLOW_CARD = ITEMS.registerItem("yellow_card",
+            YellowCardItem::new);
+
+    public static final DeferredItem<Item> RED_CARD = ITEMS.registerItem("red_card",
+            RedCardItem::new);
+
     // ==================== CLUB JERSEYS ====================
 
     public static final DeferredItem<Item> JERSEY_REAL_MADRID = registerJersey("jersey_real_madrid", ModArmorMaterials.JERSEY_REAL_MADRID);

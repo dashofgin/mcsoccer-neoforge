@@ -45,6 +45,9 @@ public class MCSoccerMod {
                         // Equipment
                         output.accept(ModItems.SOCCER_BALL.get());
                         output.accept(ModItems.GOALKEEPER_GLOVES.get());
+                        output.accept(ModItems.WHISTLE.get());
+                        output.accept(ModItems.YELLOW_CARD.get());
+                        output.accept(ModItems.RED_CARD.get());
                         output.accept(ModBlocks.GOAL_BLOCK_ITEM.get());
 
                         // Club jerseys
