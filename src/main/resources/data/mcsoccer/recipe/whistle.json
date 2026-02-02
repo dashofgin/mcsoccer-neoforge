@@ -6,12 +6,8 @@
     " I "
   ],
   "key": {
-    "I": {
-      "item": "minecraft:iron_ingot"
-    },
-    "C": {
-      "item": "minecraft:coal"
-    }
+    "I": "minecraft:iron_ingot",
+    "C": "minecraft:coal"
   },
   "result": {
     "id": "mcsoccer:whistle",

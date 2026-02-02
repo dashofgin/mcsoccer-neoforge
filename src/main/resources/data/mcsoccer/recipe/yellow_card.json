@@ -6,12 +6,8 @@
     "PPP"
   ],
   "key": {
-    "P": {
-      "item": "minecraft:paper"
-    },
-    "Y": {
-      "item": "minecraft:yellow_dye"
-    }
+    "P": "minecraft:paper",
+    "Y": "minecraft:yellow_dye"
   },
   "result": {
     "id": "mcsoccer:yellow_card",
