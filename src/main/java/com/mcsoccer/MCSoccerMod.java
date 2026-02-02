@@ -88,6 +88,8 @@ public class MCSoccerMod {
         if (FMLEnvironment.getDist().isClient()) {
             modEventBus.addListener(com.mcsoccer.client.ClientEvents::registerRenderers);
             modEventBus.addListener(com.mcsoccer.client.ClientEvents::registerKeys);
+            // Register PAL animation layer (if PAL is installed)
+            com.mcsoccer.client.AnimationHandler.registerAnimationLayer();
         }
 
         NeoForge.EVENT_BUS.register(this);
