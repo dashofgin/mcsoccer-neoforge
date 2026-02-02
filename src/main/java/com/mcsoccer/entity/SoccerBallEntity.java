@@ -33,7 +33,6 @@ import java.util.Random;
 public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity {
 
     private static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.soccer_ball.idle");
-    private static final RawAnimation ROLL_ANIM = RawAnimation.begin().thenLoop("animation.soccer_ball.rolling");
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     // Physics constants
@@ -71,6 +70,11 @@ public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity 
     private int dragPhaseMax = 0;
     private double dragStart = 1.0;
     private double dragEnd = 1.0;
+
+    // Client-side rotation tracking for natural ball spin
+    private float cumulativeRotation = 0f;
+    private float prevCumulativeRotation = 0f;
+    private float rotationAxisYaw = 0f;   // yaw angle of the rotation axis
 
     // Goal state - prevents physics while goal is being processed
     private boolean goalScored = false;
@@ -113,6 +117,19 @@ public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity 
 
         if (dribbleCooldown > 0) dribbleCooldown--;
 
+        // Update client-side rotation based on velocity
+        if (level().isClientSide()) {
+            prevCumulativeRotation = cumulativeRotation;
+            Vec3 vel = getDeltaMovement();
+            double hSpeed = vel.horizontalDistance();
+            if (hSpeed > 0.01) {
+                // Rotation speed proportional to horizontal velocity (degrees per tick)
+                cumulativeRotation += (float)(hSpeed * 360.0 / (Math.PI * 0.5));
+                // Rotation axis is perpendicular to movement direction
+                rotationAxisYaw = (float) Math.toDegrees(Math.atan2(vel.x, vel.z));
+            }
+        }
+
         Vec3 motion = getDeltaMovement();
 
         // Apply gravity
@@ -134,9 +151,9 @@ public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity 
         // Apply knuckleball wobble
         if (knuckleballActive && knuckleballTicksRemaining > 0) {
             if (tickCount % 3 == 0) {
-                double swerveX = (random.nextDouble() - 0.5) * 0.12;
-                double swerveY = (random.nextDouble() - 0.5) * 0.02;
-                double swerveZ = (random.nextDouble() - 0.5) * 0.12;
+                double swerveX = (random.nextDouble() - 0.5) * 0.25;
+                double swerveY = (random.nextDouble() - 0.5) * 0.06;
+                double swerveZ = (random.nextDouble() - 0.5) * 0.25;
                 motion = motion.add(swerveX, swerveY, swerveZ);
             }
             knuckleballTicksRemaining--;
@@ -277,9 +294,9 @@ public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity 
 
         switch (action) {
             case LONG_PASS -> {
-                double basePower = 2.0;
-                double power = (basePower + playerSpeed * 0.4) * (0.9 + random.nextDouble() * 0.2);
-                double hPower = power * 1.3;
+                double basePower = 1.2;
+                double power = (basePower + playerSpeed * 0.3) * (0.9 + random.nextDouble() * 0.2);
+                double hPower = power * 1.1;
                 double vPower;
                 if (kickType > 0.3) {
                     vPower = 0.8 + kickType * 0.6;
@@ -332,8 +349,8 @@ public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity 
                 double xForce = xDir * hPower + zDir * curvePush;
                 double zForce = zDir * hPower - xDir * curvePush;
                 setDeltaMovement(xForce, vPower, zForce);
-                spinForce = new Vec3(curveMagnitude * 0.07, 0, curveMagnitude * 0.07);
-                spinTicksRemaining = 25;
+                spinForce = new Vec3(curveMagnitude * 0.18, 0, curveMagnitude * 0.18);
+                spinTicksRemaining = 30;
                 setupDrag(18, 0.985, 0.96);
             }
             case KNUCKLEBALL -> {
@@ -403,6 +420,16 @@ public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity 
         return goalScored;
     }
 
+    /** Get interpolated ball rotation angle (degrees) for rendering */
+    public float getRenderRotation(float partialTick) {
+        return prevCumulativeRotation + (cumulativeRotation - prevCumulativeRotation) * partialTick;
+    }
+
+    /** Get the yaw angle of the rotation axis (perpendicular to movement) */
+    public float getRotationAxisYaw() {
+        return rotationAxisYaw;
+    }
+
     @Override
     public boolean isPickable() {
         return true;
@@ -467,9 +494,6 @@ public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>("movement", 5, state -> {
-            if (getDeltaMovement().horizontalDistanceSqr() > 0.001) {
-                return state.setAndContinue(ROLL_ANIM);
-            }
             return state.setAndContinue(IDLE_ANIM);
         }));
     }
