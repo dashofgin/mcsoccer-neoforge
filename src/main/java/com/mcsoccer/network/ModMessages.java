@@ -3,6 +3,7 @@ package com.mcsoccer.network;
 import com.mcsoccer.data.ModAttachments;
 import com.mcsoccer.data.PlayerSoccerData;
 import com.mcsoccer.entity.SoccerBallEntity;
+import com.mcsoccer.sound.ModSounds;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -94,7 +95,7 @@ public class ModMessages {
         blockNearbyOpponents(player, ball, 2.0, 10);
 
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.SLIME_BLOCK_HIT, SoundSource.PLAYERS, 1.0F, 0.8F);
+                ModSounds.BALL_KICK.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 
     private static void handleStandingTackle(ServerPlayer player) {

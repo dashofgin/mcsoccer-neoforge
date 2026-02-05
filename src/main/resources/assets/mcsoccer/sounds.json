@@ -2,7 +2,10 @@
   "ball_kick": {
     "subtitle": "subtitles.mcsoccer.ball_kick",
     "sounds": [
-      "mcsoccer:ball_kick"
+      "mcsoccer:ball_hit_1",
+      "mcsoccer:ball_hit_2",
+      "mcsoccer:ball_hit_3",
+      "mcsoccer:ball_hit_4"
     ]
   },
   "goal_scored": {

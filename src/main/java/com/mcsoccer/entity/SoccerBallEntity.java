@@ -4,6 +4,7 @@ import com.mcsoccer.data.ModAttachments;
 import com.mcsoccer.data.PlayerSoccerData;
 import com.mcsoccer.item.ModItems;
 import com.mcsoccer.network.KickAction;
+import com.mcsoccer.sound.ModSounds;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -248,7 +249,7 @@ public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity 
             setDeltaMovement(look.x * PASS_POWER, PASS_UP + look.y * 0.3, look.z * PASS_POWER);
             lastKicker = player;
             level().playSound(null, getX(), getY(), getZ(),
-                    SoundEvents.SLIME_BLOCK_HIT, SoundSource.PLAYERS, 1.0F, 1.0F);
+                    ModSounds.BALL_KICK.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
         }
         return InteractionResult.SUCCESS;
     }
@@ -261,7 +262,7 @@ public class SoccerBallEntity extends Entity implements ItemSupplier, GeoEntity 
             setDeltaMovement(look.x * KICK_POWER, KICK_UP + look.y * 0.5, look.z * KICK_POWER);
             lastKicker = player;
             serverLevel.playSound(null, getX(), getY(), getZ(),
-                    SoundEvents.SLIME_BLOCK_HIT, SoundSource.PLAYERS, 1.0F, 0.8F);
+                    ModSounds.BALL_KICK.get(), SoundSource.PLAYERS, 1.0F, 0.9F);
             return false;
         }
         return false;
