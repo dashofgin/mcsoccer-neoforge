@@ -3,6 +3,7 @@ package com.mcsoccer.network;
 import com.mcsoccer.data.ModAttachments;
 import com.mcsoccer.data.PlayerSoccerData;
 import com.mcsoccer.entity.SoccerBallEntity;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -10,6 +11,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -25,6 +27,25 @@ public class ModMessages {
                 KickActionPayload.STREAM_CODEC,
                 ModMessages::handleKickAction
         );
+        registrar.playToClient(
+                AnimationSyncPayload.TYPE,
+                AnimationSyncPayload.STREAM_CODEC,
+                ModMessages::handleAnimationSync
+        );
+    }
+
+    private static void handleAnimationSync(AnimationSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // This runs on client - trigger animation on the target player
+            Player localPlayer = context.player();
+            if (localPlayer == null) return;
+
+            Entity entity = localPlayer.level().getEntity(payload.playerId());
+            if (entity instanceof Player targetPlayer) {
+                // Call client-side animation handler
+                com.mcsoccer.client.AnimationHandler.triggerAnimationOnPlayer(targetPlayer, payload.animationName());
+            }
+        });
     }
 
     private static void handleKickAction(KickActionPayload payload, IPayloadContext context) {
@@ -36,12 +57,33 @@ public class ModMessages {
 
             KickAction action = payload.action();
 
+            // Broadcast animation to all nearby players
+            broadcastAnimation(player, action);
+
             switch (action) {
                 case LONG_PASS, SHORT_PASS, CURVE, KNUCKLEBALL -> handleShot(player, action);
                 case STANDING_TACKLE -> handleStandingTackle(player);
                 case SLIDE_TACKLE -> handleSlideTackle(player);
             }
         });
+    }
+
+    private static void broadcastAnimation(ServerPlayer player, KickAction action) {
+        String animationName = switch (action) {
+            case SHORT_PASS -> "kick_short_pass";
+            case LONG_PASS -> "kick_long_pass";
+            case CURVE -> "kick_curve_shot";
+            case KNUCKLEBALL -> "knuckleball";
+            case STANDING_TACKLE -> "standing_tackle";
+            case SLIDE_TACKLE -> "slide_tackle";
+        };
+
+        AnimationSyncPayload payload = new AnimationSyncPayload(player.getId(), animationName);
+
+        // Send to all players tracking this player (within render distance)
+        if (player.level() instanceof ServerLevel serverLevel) {
+            PacketDistributor.sendToPlayersTrackingEntityAndSelf(player, payload);
+        }
     }
 
     private static void handleShot(ServerPlayer player, KickAction action) {

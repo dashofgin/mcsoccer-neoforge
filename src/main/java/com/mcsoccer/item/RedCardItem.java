@@ -1,6 +1,7 @@
 package com.mcsoccer.item;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -10,10 +11,17 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
+import java.util.List;
+import java.util.Optional;
 
 public class RedCardItem extends Item {
 
     private static final int COOLDOWN_TICKS = 60; // 3 seconds
+    private static final double TARGET_RANGE = 16.0;
+    private static final double BROADCAST_RANGE = 32.0;
 
     public RedCardItem(Properties properties) {
         super(properties.stacksTo(1).rarity(Rarity.RARE));
@@ -27,16 +35,43 @@ public class RedCardItem extends Item {
             return InteractionResult.PASS;
         }
 
-        if (!level.isClientSide()) {
-            // Show red card (display message and sound)
+        if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
+            // Find player the referee is looking at
+            Optional<Player> targetOpt = findTargetPlayer(player, serverLevel);
+
+            // Play sound
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.5F, 1.5F);
 
-            // Display ejection message
-            player.displayClientMessage(
-                    Component.literal("🔴 Red Card - Ejected!").withStyle(style -> style.withColor(0xDD1111)),
-                    true // Action bar
-            );
+            String refereeName = player.getName().getString();
+
+            if (targetOpt.isPresent()) {
+                Player target = targetOpt.get();
+                String targetName = target.getName().getString();
+
+                // Message to broadcast
+                Component message = Component.literal("🔴 ")
+                        .append(Component.literal(refereeName).withStyle(s -> s.withColor(0xAAAAAA)))
+                        .append(Component.literal(" gives RED CARD to ").withStyle(s -> s.withColor(0xDD1111)))
+                        .append(Component.literal(targetName).withStyle(s -> s.withColor(0xFFFFFF)))
+                        .append(Component.literal(" - EJECTED!").withStyle(s -> s.withColor(0xDD1111)));
+
+                // Broadcast to all nearby players
+                broadcastMessage(serverLevel, player.position(), message, BROADCAST_RANGE);
+
+                // Also show on action bar for target
+                target.displayClientMessage(
+                        Component.literal("🔴 You received a RED CARD - EJECTED!").withStyle(s -> s.withColor(0xDD1111)),
+                        true
+                );
+            } else {
+                // No target - just show card in the air
+                Component message = Component.literal("🔴 ")
+                        .append(Component.literal(refereeName).withStyle(s -> s.withColor(0xAAAAAA)))
+                        .append(Component.literal(" shows RED CARD!").withStyle(s -> s.withColor(0xDD1111)));
+
+                broadcastMessage(serverLevel, player.position(), message, BROADCAST_RANGE);
+            }
 
             player.getCooldowns().addCooldown(stack, COOLDOWN_TICKS);
             player.swing(hand, true);
@@ -48,5 +83,48 @@ public class RedCardItem extends Item {
         }
 
         return InteractionResult.PASS;
+    }
+
+    private Optional<Player> findTargetPlayer(Player referee, ServerLevel level) {
+        Vec3 eyePos = referee.getEyePosition();
+        Vec3 lookDir = referee.getLookAngle();
+        Vec3 endPos = eyePos.add(lookDir.scale(TARGET_RANGE));
+
+        // Get all players in range
+        AABB searchBox = new AABB(eyePos, endPos).inflate(2.0);
+        List<Player> players = level.getEntitiesOfClass(Player.class, searchBox, p -> p != referee);
+
+        Player closest = null;
+        double closestDist = Double.MAX_VALUE;
+
+        for (Player p : players) {
+            // Check if player is roughly in the direction we're looking
+            Vec3 toPlayer = p.position().add(0, p.getEyeHeight() / 2, 0).subtract(eyePos);
+            double dist = toPlayer.length();
+
+            if (dist > TARGET_RANGE) continue;
+
+            // Normalize and check dot product (how aligned are we)
+            Vec3 toPlayerNorm = toPlayer.normalize();
+            double dot = lookDir.dot(toPlayerNorm);
+
+            // Must be looking roughly at player (within ~30 degrees)
+            if (dot > 0.85 && dist < closestDist) {
+                closestDist = dist;
+                closest = p;
+            }
+        }
+
+        return Optional.ofNullable(closest);
+    }
+
+    private void broadcastMessage(ServerLevel level, Vec3 pos, Component message, double range) {
+        AABB box = AABB.ofSize(pos, range * 2, range * 2, range * 2);
+        List<Player> nearby = level.getEntitiesOfClass(Player.class, box,
+                p -> p.distanceToSqr(pos.x, pos.y, pos.z) < range * range);
+
+        for (Player p : nearby) {
+            p.displayClientMessage(message, false);
+        }
     }
 }

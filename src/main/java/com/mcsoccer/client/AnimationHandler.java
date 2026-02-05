@@ -2,8 +2,7 @@ package com.mcsoccer.client;
 
 import com.mcsoccer.MCSoccerMod;
 import com.mcsoccer.network.KickAction;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Handles triggering player animations for soccer actions.
@@ -61,6 +60,19 @@ public class AnimationHandler {
             PALAnimationHelper.registerAnimationLayer();
         } catch (Exception e) {
             MCSoccerMod.LOGGER.warn("Failed to register PAL animation layer: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Trigger animation on a specific player (used for network sync).
+     * Called from server->client packet to show animations to all nearby players.
+     */
+    public static void triggerAnimationOnPlayer(Player player, String animationName) {
+        if (!isPalAvailable()) return;
+        try {
+            PALAnimationHelper.triggerAnimationOnPlayer(player, animationName);
+        } catch (Exception e) {
+            MCSoccerMod.LOGGER.warn("Failed to trigger PAL animation '{}' on player: {}", animationName, e.getMessage());
         }
     }
 }
